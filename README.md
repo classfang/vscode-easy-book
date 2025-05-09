@@ -1,1 +1,0 @@
-# vscode-easy-book

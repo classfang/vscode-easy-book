@@ -1,0 +1,123 @@
+{
+  "name": "easy-book",
+  "displayName": "Easy-Book",
+  "description": "VSCode extension for reading TXT",
+  "version": "1.0.0",
+  "publisher": "Junki",
+  "icon": "images/icon.png",
+  "engines": {
+    "vscode": "^1.34.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "txt",
+    "book"
+  ],
+  "activationEvents": [
+    "onCommand:easyBook.clearStatusBar",
+    "onCommand:easyBook.navigatePreviousPage",
+    "onCommand:easyBook.navigateNextPage",
+    "onCommand:easyBook.jumpToPage"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "Easy-Book",
+      "type": "object",
+      "properties": {
+        "easyBook.currPageNumber": {
+          "type": "number",
+          "default": 1,
+          "description": "当前页码（Current Page Number）"
+        },
+        "easyBook.pageSize": {
+          "type": "number",
+          "default": 50,
+          "description": "每页字数（Page Size）"
+        },
+        "easyBook.isEnglish": {
+          "type": "boolean",
+          "default": false,
+          "description": "是否为英文书籍（Is it an English book？）"
+        },
+        "easyBook.lineBreak": {
+          "type": "string",
+          "default": " ",
+          "description": "换行符号，默认为空格（Line Break Separation Symbol,Default a space）"
+        },
+        "easyBook.filePath": {
+          "type": "string",
+          "default": "",
+          "description": "TXT格式文件的绝对路径（Absolute Path of TXT）"
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "easyBook.clearStatusBar",
+        "title": "Easy Book: Clear Status Bar"
+      },
+      {
+        "command": "easyBook.navigatePreviousPage",
+        "title": "Easy Book: Previous Page"
+      },
+      {
+        "command": "easyBook.navigateNextPage",
+        "title": "Easy Book: Next Page"
+      },
+      {
+        "command": "easyBook.jumpToPage",
+        "title": "Easy Book: Jump To Page"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "easyBook.navigatePreviousPage",
+        "key": "ctrl+alt+,",
+        "mac": "alt+w",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "easyBook.navigateNextPage",
+        "key": "ctrl+alt+.",
+        "mac": "alt+s",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "easyBook.jumpToPage",
+        "key": "ctrl+alt+;",
+        "mac": "cmd+;"
+      },
+      {
+        "command": "easyBook.clearStatusBar",
+        "key": "ctrl+alt+m",
+        "mac": "alt+q"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "yarn run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "postinstall": "node ./node_modules/vscode/bin/install",
+    "test": "yarn run compile && node ./node_modules/vscode/bin/test",
+    "package": "yarn run compile && vsce package"
+  },
+  "devDependencies": {
+    "@types/mocha": "^2.2.42",
+    "@types/node": "^10.12.21",
+    "tslint": "^5.12.1",
+    "typescript": "^3.3.1",
+    "vscode": "^1.1.34"
+  },
+  "bugs": {
+    "url": "https://github.com/classfang/vscode-easy-book/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/classfang/vscode-easy-book"
+  },
+  "homepage": "https://github.com/classfang/vscode-easy-book"
+}
