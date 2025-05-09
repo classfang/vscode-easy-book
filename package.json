@@ -19,7 +19,8 @@
     "onCommand:easyBook.clearStatusBar",
     "onCommand:easyBook.navigatePreviousPage",
     "onCommand:easyBook.navigateNextPage",
-    "onCommand:easyBook.jumpToPage"
+    "onCommand:easyBook.jumpToPage",
+    "onCommand:easyBook.toggleAutoPage"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -36,6 +37,11 @@
           "type": "number",
           "default": 50,
           "description": "每页字数（Page Size）"
+        },
+        "easyBook.autoPageInterval": {
+          "type": "number",
+          "default": 10,
+          "description": "自动翻页时间间隔（秒）（Auto Page Turning Interval (seconds)）"
         },
         "easyBook.isEnglish": {
           "type": "boolean",
@@ -70,6 +76,10 @@
       {
         "command": "easyBook.jumpToPage",
         "title": "Easy Book: Jump To Page"
+      },
+      {
+        "command": "easyBook.toggleAutoPage",
+        "title": "Easy Book: Toggle Auto Page"
       }
     ],
     "keybindings": [
@@ -94,6 +104,11 @@
         "command": "easyBook.clearStatusBar",
         "key": "ctrl+alt+m",
         "mac": "alt+q"
+      },
+      {
+        "command": "easyBook.toggleAutoPage",
+        "key": "ctrl+alt+p",
+        "mac": "alt+p"
       }
     ]
   },

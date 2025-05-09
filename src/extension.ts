@@ -7,6 +7,11 @@
 import { commands, ExtensionContext, window } from 'vscode';
 import * as book from './book-util';
 
+// 全局变量，用于存储自动翻页的定时器
+let autoPageTimer: NodeJS.Timeout | undefined;
+// 用于存储自动翻页状态
+let isAutoPageEnabled = false;
+
 /**
  * 扩展激活时调用的函数
  * 注册所有命令并将其添加到订阅列表中
@@ -51,15 +56,64 @@ export function activate(context: ExtensionContext) {
 		window.setStatusBarMessage(books.getJumpingPage());
 	});
 
+	/**
+	 * 切换自动翻页命令
+	 * 开始或暂停自动翻页功能
+	 */
+	let toggleAutoPage = commands.registerCommand('easyBook.toggleAutoPage', () => {
+		if (isAutoPageEnabled) {
+			// 如果自动翻页已启用，则停止
+			stopAutoPage();
+		} else {
+			// 如果自动翻页未启用，则启动
+			startAutoPage(context);
+		}
+	});
+
 	// 将所有命令添加到上下文订阅中，确保资源能够在扩展停用时被释放
 	context.subscriptions.push(clearStatusBar);
 	context.subscriptions.push(navigateNextPage);
 	context.subscriptions.push(navigatePreviousPage);
 	context.subscriptions.push(jumpToPage);
+	context.subscriptions.push(toggleAutoPage);
+}
+
+/**
+ * 启动自动翻页
+ * @param context 扩展上下文
+ */
+function startAutoPage(context: ExtensionContext) {
+	// 获取配置的自动翻页时间间隔（秒）
+	const autoPageInterval = book.Book.getAutoPageInterval();
+	
+	// 如果已有定时器，先清除
+	stopAutoPage();
+	
+	// 将状态设置为已启用
+	isAutoPageEnabled = true;
+	
+	// 设置新的定时器，定期执行下一页命令
+	autoPageTimer = setInterval(() => {
+		let books = new book.Book(context);
+		window.setStatusBarMessage(books.getNextPage());
+	}, autoPageInterval * 1000);
+}
+
+/**
+ * 停止自动翻页
+ */
+function stopAutoPage() {
+	if (autoPageTimer) {
+		clearInterval(autoPageTimer);
+		autoPageTimer = undefined;
+	}
+	isAutoPageEnabled = false;
 }
 
 /**
  * 扩展停用时调用的函数
- * 目前没有需要清理的资源
+ * 清理自动翻页定时器
  */
-export function deactivate() { }
+export function deactivate() {
+	stopAutoPage();
+}

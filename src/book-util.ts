@@ -15,6 +15,14 @@ export class Book {
     }
 
     /**
+     * 获取配置的自动翻页时间间隔（秒）
+     * @returns 自动翻页时间间隔
+     */
+    public static getAutoPageInterval(): number {
+        return workspace.getConfiguration().get<number>('easyBook.autoPageInterval') || 10;
+    }
+
+    /**
      * 计算文本总页数
      * @param text 文本内容
      */
