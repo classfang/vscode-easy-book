@@ -85,30 +85,30 @@
     "keybindings": [
       {
         "command": "easyBook.navigatePreviousPage",
-        "key": "ctrl+alt+,",
+        "key": "ctrl+alt+w",
         "mac": "alt+w",
         "when": "editorTextFocus"
       },
       {
         "command": "easyBook.navigateNextPage",
-        "key": "ctrl+alt+.",
+        "key": "ctrl+alt+s",
         "mac": "alt+s",
         "when": "editorTextFocus"
       },
       {
         "command": "easyBook.jumpToPage",
-        "key": "ctrl+alt+;",
-        "mac": "cmd+;"
+        "key": "ctrl+alt+e",
+        "mac": "alt+e"
       },
       {
         "command": "easyBook.clearStatusBar",
-        "key": "ctrl+alt+m",
+        "key": "ctrl+alt+q",
         "mac": "alt+q"
       },
       {
         "command": "easyBook.toggleAutoPage",
-        "key": "ctrl+alt+p",
-        "mac": "alt+p"
+        "key": "ctrl+alt+d",
+        "mac": "alt+d"
       }
     ]
   },

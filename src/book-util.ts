@@ -1,5 +1,16 @@
 import { ExtensionContext, workspace, window } from 'vscode';
 import * as fs from "fs";
+import { promisify } from 'util';
+
+const readFileAsync = promisify(fs.readFile);
+
+interface BookConfig {
+    filePath: string;
+    isEnglish: boolean;
+    pageSize: number;
+    lineBreak: string;
+    currPageNumber: number;
+}
 
 export class Book {
     private currentPageNumber: number = 1;
@@ -8,10 +19,25 @@ export class Book {
     private startPosition: number = 0;
     private endPosition: number = 0;
     private filePath: string = "";
-    private extensionContext: ExtensionContext;
+    private readonly extensionContext: ExtensionContext;
+    private fileContent: string = "";
+    private config: BookConfig;
 
     constructor(extensionContext: ExtensionContext) {
         this.extensionContext = extensionContext;
+        this.config = this.loadConfig();
+        this.initialize();
+    }
+
+    private loadConfig(): BookConfig {
+        const config = workspace.getConfiguration('easyBook');
+        return {
+            filePath: config.get<string>('filePath') || "",
+            isEnglish: config.get<boolean>('isEnglish') || false,
+            pageSize: config.get<number>('pageSize') || 50,
+            lineBreak: config.get<string>('lineBreak') || " ",
+            currPageNumber: config.get<number>('currPageNumber') || 1
+        };
     }
 
     /**
@@ -27,8 +53,7 @@ export class Book {
      * @param text 文本内容
      */
     private calculateTotalPages(text: string): void {
-        const size = text.length;
-        this.totalPages = Math.ceil(size / this.pageSize);
+        this.totalPages = Math.max(1, Math.ceil(text.length / this.pageSize));
     }
 
     /**
@@ -73,45 +98,42 @@ export class Book {
      * 计算当前页的开始和结束位置
      */
     private calculatePageBoundaries(): void {
-        // 修正计算逻辑，开始和结束位置计算错误
         this.startPosition = (this.currentPageNumber - 1) * this.pageSize;
-        this.endPosition = this.startPosition + this.pageSize;
+        this.endPosition = Math.min(this.startPosition + this.pageSize, this.fileContent.length);
     }
 
     /**
      * 读取文件内容并处理格式
      * @returns 处理后的文本内容
      */
-    private readFile(): string {
+    private async readFileContent(): Promise<string> {
         if (!this.filePath) {
-            window.showWarningMessage("请填写TXT格式的小说文件路径 & Please fill in the path of the TXT format novel file");
-            return "";
+            throw new Error("请填写TXT格式的小说文件路径 & Please fill in the path of the TXT format novel file");
         }
 
         try {
-            const data = fs.readFileSync(this.filePath, 'utf-8');
-            const lineBreak = workspace.getConfiguration().get<string>('easyBook.lineBreak') || " ";
-            
-            return data.toString()
-                .replace(/\n/g, lineBreak)
-                .replace(/\r/g, " ")
-                .replace(/　　/g, " ")
-                .replace(/ /g, " ");
+            const data = await readFileAsync(this.filePath, 'utf-8');
+            return this.formatContent(data.toString());
         } catch (error) {
-            window.showErrorMessage(`文件读取错误: ${error instanceof Error ? error.message : String(error)}`);
-            return "";
+            throw new Error(`文件读取错误: ${error instanceof Error ? error.message : String(error)}`);
         }
+    }
+
+    private formatContent(content: string): string {
+        return content
+            .replace(/\n/g, this.config.lineBreak)
+            .replace(/\r/g, " ")
+            .replace(/　　/g, " ")
+            .replace(/ +/g, " ");
     }
 
     /**
      * 初始化配置
      */
     private initialize(): void {
-        this.filePath = workspace.getConfiguration().get<string>('easyBook.filePath') || "";
-        const isEnglish = workspace.getConfiguration().get<boolean>('easyBook.isEnglish') || false;
-        const configPageSize = workspace.getConfiguration().get<number>('easyBook.pageSize') || 50;
-
-        this.pageSize = isEnglish ? configPageSize * 2 : configPageSize;
+        this.filePath = this.config.filePath;
+        this.pageSize = this.config.isEnglish ? this.config.pageSize * 2 : this.config.pageSize;
+        this.currentPageNumber = this.config.currPageNumber;
     }
 
     /**
@@ -127,29 +149,52 @@ export class Book {
      * @param navigationType 导航类型
      * @returns 页面内容和页面信息
      */
-    private getPageContent(navigationType: "previous" | "next" | "current"): string {
-        this.initialize();
+    private async getPageContent(navigationType: "previous" | "next" | "current"): Promise<string> {
+        try {
+            await this.ensureFileContent();
 
-        const text = this.readFile();
-        if (!text) {
-            return "文件读取失败 & Failed to read file";
+            switch (navigationType) {
+                case "previous":
+                    this.currentPageNumber = this.validatePageNumber(this.currentPageNumber - 1);
+                    break;
+                case "next":
+                    this.currentPageNumber = this.validatePageNumber(this.currentPageNumber + 1);
+                    break;
+                case "current":
+                    this.currentPageNumber = this.validatePageNumber(this.currentPageNumber);
+                    break;
+            }
+
+            this.calculatePageBoundaries();
+            await this.savePagePosition();
+
+            return `${this.fileContent.substring(this.startPosition, this.endPosition)}    ${this.currentPageNumber}/${this.totalPages}`;
+        } catch (error) {
+            return error instanceof Error ? error.message : String(error);
         }
+    }
 
-        this.calculateTotalPages(text);
-        this.navigateToPage(navigationType);
-        this.calculatePageBoundaries();
+    private validatePageNumber(pageNumber: number): number {
+        return Math.max(1, Math.min(pageNumber, this.totalPages));
+    }
 
-        const pageInfo = this.getPageInfo();
-        this.savePagePosition();
-
-        return text.substring(this.startPosition, this.endPosition) + "    " + pageInfo;
+    private async ensureFileContent(): Promise<void> {
+        if (!this.fileContent) {
+            try {
+                this.fileContent = await this.readFileContent();
+                this.calculateTotalPages(this.fileContent);
+            } catch (error) {
+                window.showErrorMessage(error instanceof Error ? error.message : String(error));
+                throw error;
+            }
+        }
     }
 
     /**
      * 获取上一页内容
      * @returns 上一页的内容和页面信息
      */
-    public getPreviousPage(): string {
+    public async getPreviousPage(): Promise<string> {
         return this.getPageContent("previous");
     }
 
@@ -157,7 +202,7 @@ export class Book {
      * 获取下一页内容
      * @returns 下一页的内容和页面信息
      */
-    public getNextPage(): string {
+    public async getNextPage(): Promise<string> {
         return this.getPageContent("next");
     }
 
@@ -165,7 +210,7 @@ export class Book {
      * 跳转到指定页
      * @returns 跳转页的内容和页面信息
      */
-    public getJumpingPage(): string {
+    public async getJumpingPage(): Promise<string> {
         return this.getPageContent("current");
     }
 }
